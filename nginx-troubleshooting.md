@@ -1,166 +1,307 @@
-Since you're learning RHEL troubleshooting, use this checklist in this order.
+# Nginx Troubleshooting Checklist — RHEL
 
-Nginx troubleshooting checklist — RHEL
-1. Check whether Nginx is installed
+## 1. Check if Nginx is installed
+
+```bash
 rpm -q nginx
+```
 
-If not installed:
+If Nginx is not installed:
 
+```bash
 dnf install nginx -y
-2. Check the service status
+```
+
+---
+
+## 2. Check Nginx service status
+
+```bash
 systemctl status nginx
-
-Look for:
-
-Active: active (running)
-
-If stopped:
-
-systemctl start nginx
-3. Check whether Nginx starts automatically
-systemctl is-enabled nginx
-
-If you want it to start after reboot:
-
-systemctl enable nginx
-4. Check Nginx configuration
-
-Very important:
-
-nginx -t
+```
 
 Expected:
 
+```text
+Active: active (running)
+```
+
+If Nginx is stopped:
+
+```bash
+systemctl start nginx
+```
+
+---
+
+## 3. Check if Nginx starts automatically after reboot
+
+```bash
+systemctl is-enabled nginx
+```
+
+Enable it if required:
+
+```bash
+systemctl enable nginx
+```
+
+---
+
+## 4. Check Nginx configuration
+
+Before restarting Nginx, always test the configuration:
+
+```bash
+nginx -t
+```
+
+Expected:
+
+```text
 syntax is ok
 test is successful
+```
 
-If this fails, fix the configuration before restarting Nginx.
+If the test fails, fix the configuration error first.
 
-5. Check whether Nginx is listening on port 80
+---
+
+## 5. Check if Nginx is listening on port 80
+
+```bash
 ss -lntp | grep :80
+```
 
 Expected:
 
+```text
 0.0.0.0:80
-
-or:
-
 [::]:80
-6. Test Nginx locally
-curl http://localhost
+```
 
-If you get HTML, Nginx is responding.
+This means Nginx is listening for HTTP connections on port 80.
+
+---
+
+## 6. Test Nginx locally
+
+```bash
+curl http://localhost
+```
 
 You can also test:
 
+```bash
 curl http://127.0.0.1
-7. Check the Linux firewall
+```
+
+If HTML is returned, Nginx is responding locally.
+
+---
+
+## 7. Check the Linux firewall
+
+```bash
 firewall-cmd --list-all
+```
 
 Look for:
 
+```text
 services: ... http ...
+```
 
-If http is missing:
+If HTTP is not allowed:
 
+```bash
 firewall-cmd --permanent --add-service=http
 firewall-cmd --reload
+```
+
+Verify:
+
+```bash
+firewall-cmd --list-services
+```
+
+---
+
+## 8. Check Nginx processes
+
+```bash
+ps aux | grep nginx
+```
+
+Normally you should see:
+
+```text
+nginx: master process
+nginx: worker process
+```
+
+Check the main PID:
+
+```bash
+systemctl status nginx
+```
+
+Example:
+
+```text
+Main PID: 7199 (nginx)
+```
+
+---
+
+## 9. Check Nginx logs
+
+### Error log
+
+```bash
+tail -f /var/log/nginx/error.log
+```
+
+### Access log
+
+```bash
+tail -f /var/log/nginx/access.log
+```
+
+### Systemd logs
+
+```bash
+journalctl -u nginx
+```
+
+For detailed recent errors:
+
+```bash
+journalctl -u nginx -xe
+```
+
+---
+
+## 10. Check Nginx configuration for listening port
+
+```bash
+grep -R "listen" /etc/nginx/
+```
+
+Example:
+
+```text
+listen 80;
+```
+
+If Nginx is listening on another port, use that port when accessing it.
+
+---
+
+## 11. Check the web root
+
+For the default Nginx configuration:
+
+```bash
+ls -l /usr/share/nginx/html/
+```
+
+Test the default page:
+
+```bash
+curl http://localhost
+```
+
+---
+
+## 12. Check SELinux
+
+Check SELinux status:
+
+```bash
+getenforce
+```
+
+Possible output:
+
+```text
+Enforcing
+```
+
+If you suspect SELinux is blocking Nginx, check for denials:
+
+```bash
+ausearch -m AVC -ts recent
+```
+
+---
+
+## 13. Restart Nginx after configuration changes
+
+First test the configuration:
+
+```bash
+nginx -t
+```
+
+If successful:
+
+```bash
+systemctl restart nginx
+```
 
 Then verify:
 
-firewall-cmd --list-services
-8. Check Nginx logs
+```bash
+systemctl status nginx
+```
 
-Error log:
+---
 
-tail -f /var/log/nginx/error.log
+# Quick Troubleshooting Flow
 
-Access log:
-
-tail -f /var/log/nginx/access.log
-
-Also useful:
-
-journalctl -u nginx
-
-For recent errors:
-
-journalctl -u nginx -xe
-9. Check the Nginx processes
-ps aux | grep nginx
-
-You should normally see a master process and one or more worker processes.
-
-nginx: master process
-nginx: worker process
-10. Check the web page/document root
-
-For the default Nginx configuration, check:
-
-ls -l /usr/share/nginx/html/
-
-Try:
-
-curl http://localhost
-
-If you get 403 Forbidden, investigate permissions, SELinux, or the Nginx configuration.
-
-11. Check SELinux
-
-Check status:
-
-getenforce
-
-If it says:
-
-Enforcing
-
-SELinux may be involved if you've changed document roots, ports, or file contexts.
-
-Check recent SELinux denials:
-
-ausearch -m AVC -ts recent
-12. Check which port Nginx is configured to use
-grep -R "listen" /etc/nginx/
-
-You might see:
-
-listen 80;
-
-If Nginx is configured for another port, your browser must use that port.
-
-13. Restart after configuration changes
+```text
+Is Nginx installed?
+        ↓
+rpm -q nginx
+        ↓
+Is the service running?
+        ↓
+systemctl status nginx
+        ↓
+Is the configuration correct?
+        ↓
 nginx -t
-systemctl restart nginx
+        ↓
+Is Nginx listening on port 80?
+        ↓
+ss -lntp | grep :80
+        ↓
+Does localhost work?
+        ↓
+curl http://localhost
+        ↓
+Is HTTP allowed by firewall?
+        ↓
+firewall-cmd --list-all
+        ↓
+Check logs
+        ↓
+journalctl -u nginx
+        ↓
+Check SELinux if necessary
+```
 
-Always run nginx -t before restarting after configuration changes.
+# ⭐ 5 Commands to Remember
 
-🧠 Your troubleshooting flow
-
-Memorize this:
-
-1. Is nginx installed?
-       ↓
-2. Is nginx service running?
-       ↓
-3. Is configuration correct? (nginx -t)
-       ↓
-4. Is Nginx listening? (ss -lntp)
-       ↓
-5. Does localhost work? (curl)
-       ↓
-6. Is firewall allowing HTTP?
-       ↓
-7. Check logs
-       ↓
-8. Check SELinux
-       ↓
-9. Check configuration/document root
-⭐ The 5 commands I'd memorize first
+```bash
 systemctl status nginx
 nginx -t
 ss -lntp | grep :80
 curl http://localhost
 firewall-cmd --list-all
+```
 
-These five will solve or quickly narrow down most basic Nginx problems on RHEL.
+## 🧠 Simple Memory
+
+**Installed → Running → Config → Listening → Local Test → Firewall → Logs → SELinux**
