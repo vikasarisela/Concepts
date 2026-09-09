@@ -154,3 +154,6 @@ ps -ef | grep node
 # 3. View live application logging outputs
 sudo journalctl -u node-app.service -f
 ```
+
+
+/var/www/ is a highly recognized standard directory path for hosting web applications and websites across almost all Unix-like operating systems (including Ubuntu, Debian, RHEL, and CentOS).The location is strictly defined by the Filesystem Hierarchy Standard (FHS), which is the official blueprint governing where files should live on Linux systems.
