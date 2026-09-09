@@ -6,6 +6,12 @@
 •  The service tells the operating system to "bind" or listen to a specific port (such as port 80 for HTTP traffic).
 •  When an incoming data packet arrives at your computer's IP address on port 80, the operating system uses that port number to deliver the data directly to the correct process
 
+Concept	What it means for mysqld	How you interact with it
+As a Process	It is the actual executable running in the system memory. The d stands for daemon, which means it runs quietly in the background handling database requests.	Checked via: ps aux | grep mysqld or top
+As a Service	It is a configuration wrapper that allows the operating system to automatically start, stop, monitor, and manage the mysqld process.	Managed via: sudo systemctl start mysql
+
+
+
 
 
 ## 1. Application
