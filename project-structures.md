@@ -84,3 +84,65 @@ my-dotnet-app/
 | **Node.js** | `package.json` | `package-lock.json` | `/dist` + Production `node_modules` | `node` |
 | **Java** | `pom.xml` or `build.gradle` | `pom.xml.tag` / Gradle locks | `target/*.jar` or `build/libs/*.jar` | `java -jar` |
 | **.NET** | `*.csproj` | `packages.lock.json` (Optional) | `/publish/*` | `dotnet *.dll` |
+
+
+
+### Stack-Specific Service File Configuration (The `ExecStart` Core)
+`ExecStart` requires **absolute file paths** for both the runtime interpreter and the application files.
+
+#### Node.js
+```ini
+WorkingDirectory=/var/www/my-node-app
+ExecStart=/usr/bin/node /var/www/my-node-app/server.js
+```
+
+#### Python (e.g., FastAPI / Flask via Virtual Environment)
+```ini
+WorkingDirectory=/var/www/my-python-app
+ExecStart=/var/www/my-python-app/venv/bin/gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
+```
+
+#### Java (Spring Boot)
+```ini
+WorkingDirectory=/var/www/my-java-app
+ExecStart=/usr/bin/java -jar /var/www/my-java-app/my-application.jar
+```
+
+#### Go (Golang) or Rust (Native Compiled Binary)
+```ini
+WorkingDirectory=/var/www/my-go-app
+ExecStart=/var/www/my-go-app/server-binary
+```
+
+---
+
+## 📂 Part 4: Production Stacks & Build Artifacts Blueprint
+
+DevOps pipelines must separate source code from production artifacts. Use this map to know what to build, what to copy, and what to exclude.
+
+### 1. Node.js (JavaScript / TypeScript)
+*   **Manifest:** `package.json` | **Lockfile:** `package-lock.json`
+*   **Pipeline Build Command:** `npm ci --only=production` *(for pure JS)* or `npm run build` *(for TS)*.
+*   **What to Deploy:** `/dist` (or `/build`), `package.json`, `package-lock.json`, and production `node_modules`. **Exclude** the `src/` directory and development dependencies.
+
+### 2. Java (Spring Boot / Maven or Gradle)
+*   **Manifest:** `pom.xml` (Maven) or `build.gradle` (Gradle)
+*   **Pipeline Build Command:** `mvn clean package -DskipTests` or `./gradlew build -x test`
+*   **What to Deploy:** **Only the `.jar` file** generated inside `target/` or `build/libs/`. The entire source tree can be completely discarded after the compilation pipeline stage.
+
+### 3. .NET (C#)
+*   **Manifest:** `*.csproj` | **Lockfile:** `packages.lock.json`
+*   **Pipeline Build Command:** `dotnet publish -c Release -o ./publish`
+*   **What to Deploy:** **Only the contents of the `/publish` directory** (containing the `App.dll`, dependencies, and runtime configurations).
+
+### 4. Cross-Platform Dependency Manifest Equivalents
+
+| Language | The Manifest File <br>*(The Shopping List)* | The Lockfile <br>*(Locks exact versions for production)* | The Installation Tool <br>*(CLI Framework)* |
+| :--- | :--- | :--- | :--- |
+| **Node.js** | `package.json` | `package-lock.json` / `yarn.lock` | `npm` / `yarn` / `pnpm` |
+| **Python** | `requirements.txt` / `pyproject.toml` | `poetry.lock` / `Pipfile.lock` | `pip` / `poetry` |
+| **Java** | `pom.xml` or `build.gradle` | *Handled via internal hashes / tags* | `mvn` / `gradle` |
+| **.NET (C#)** | `*.csproj` | `packages.lock.json` | `dotnet` CLI |
+| **Go (Golang)**| `go.mod` | `go.sum` | `go` CLI |
+
+> ⚠️ **DevOps Rule of Thumb:** Always write pipelines that target the **Lockfile** (like running `npm ci` instead of `npm install`). The manifest file allows version drifts, but the lockfile guarantees that the exact cryptographic version tested by the developer is what gets deployed to production.
