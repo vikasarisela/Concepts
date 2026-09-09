@@ -1,15 +1,25 @@
 # Application, Process, Service File, Service User — Relation
 
 
-•  You start a web server software program, which creates a process in your operating system memory.
-•  That program is designed to run quietly in the background as a system service.
-•  The service tells the operating system to "bind" or listen to a specific port (such as port 80 for HTTP traffic).
-•  When an incoming data packet arrives at your computer's IP address on port 80, the operating system uses that port number to deliver the data directly to the correct process
+# Understanding Processes and Services
 
-Concept	What it means for mysqld	How you interact with it
-As a Process	It is the actual executable running in the system memory. The d stands for daemon, which means it runs quietly in the background handling database requests.	Checked via: ps aux | grep mysqld or top
-As a Service	It is a configuration wrapper that allows the operating system to automatically start, stop, monitor, and manage the mysqld process.	Managed via: sudo systemctl start mysql
+Here is a breakdown of how web servers, background processes, and system services interact with your operating system.
 
+## 🚀 How a Network Service Works
+
+* **Start the Software:** You start a web server software program, which creates a process in your operating system memory.
+* **Run in Background:** That program is designed to run quietly in the background as a system service.
+* **Bind to a Port:** The service tells the operating system to "bind" or listen to a specific port (such as port 80 for HTTP traffic).
+* **Route Incoming Traffic:** When an incoming data packet arrives at your computer's IP address on port 80, the operating system uses that port number to deliver the data directly to the correct process.
+
+---
+
+## 🔍 Process vs. Service (Using MySQL as an Example)
+
+| Concept | What it means for `mysqld` | How you interact with it |
+| :--- | :--- | :--- |
+| **As a Process** | It is the actual executable running in the system memory. The `d` stands for **daemon**, which means it runs quietly in the background handling database requests. | Checked via: `ps aux \| grep mysqld` or `top` |
+| **As a Service** | It is a configuration wrapper that allows the operating system to automatically start, stop, monitor, and manage the `mysqld` process. | Managed via: `sudo systemctl start mysql` |
 
 
 
