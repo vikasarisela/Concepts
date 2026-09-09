@@ -1,27 +1,31 @@
-# Guide: Secure Node.js Installation and Deployment on Linux
+# Guide: Secure Node.js Installation and Deployment on RHEL
 
-This guide walks you through installing Node.js securely on a Linux server (Ubuntu/Debian) and configuring it to run safely under a non-interactive system user.
+This guide walks you through installing Node.js securely on a **Red Hat Enterprise Linux (RHEL)** server and configuring it to run safely under a non-interactive system user using systemd and SELinux considerations.
 
 ---
 
 ## 🛑 Prerequisites
 Before starting, ensure your system package manager is fully up to date:
 ```bash
-sudo apt update && sudo apt upgrade -y
+sudo dnf update -y
 ```
 
 ---
 
-## 🛠️ Step 1: Install Node.js Securely via NodeSource
+## 🛠️ Step 1: Install Node.js Securely via AppStream
 
-Avoid using the default repository version of Node.js, as it is often severely outdated. Instead, use the official NodeSource binaries to install a specific Long Term Support (LTS) release.
+RHEL provides stable, curated Node.js streams directly inside its official repositories. You do not need external scripts.
 
 ```bash
-# 1. Download and run the NodeSource setup script (Example: Node.js 22 LTS)
-curl -fsSL https://nodesource.com | sudo -E bash -
+# 1. List available Node.js versions
+sudo dnf module list nodejs
 
-# 2. Install Node.js and build essentials (needed for compiled npm packages)
-sudo apt-get install -y nodejs build-essential
+# 2. Enable and install a specific LTS version (Example: Node.js 22)
+sudo dnf module enable nodejs:22 -y
+sudo dnf install nodejs -y
+
+# 3. Install development tools (needed for compiled npm packages)
+sudo dnf groupinstall "Development Tools" -y
 ```
 
 Verify the installation succeeded and note down the exact binary execution path:
@@ -38,10 +42,10 @@ which node # Usually outputs: /usr/bin/node
 Never run your Node.js application as `root`. Create a restricted system user that has no interactive login capabilities.
 
 ```bash
-sudo useradd -r -s /bin/false nodeuser
+sudo useradd -r -s /sbin/nologin nodeuser
 ```
 *   `-r`: Defines this as a system user account.
-*   `-s /bin/false`: Rejects all interactive SSH or local terminal logins.
+*   `-s /sbin/nologin`: The standard RHEL convention to reject all interactive SSH or local terminal logins.
 
 ---
 
@@ -105,7 +109,21 @@ WantedBy=multi-user.target
 
 ---
 
-## 🚀 Step 5: Start and Enable the Service
+## 🔒 Step 5: SELinux Configuration (RHEL Specific)
+
+RHEL enforces **SELinux** security contexts by default. If your app attempts to listen on a network port, SELinux may block it unless permissions are explicitly granted.
+
+If your Node.js app runs on a typical custom port like `3000` or `8080`, you must tell SELinux to allow HTTP traffic on that port:
+
+```bash
+# Allow HTTP traffic to bind to your specific app port (e.g., 3000)
+sudo semanage port -a -t http_port_t -p tcp 3000
+```
+*(Note: If `semanage` is missing, install it using `sudo dnf install policycoreutils-python-utils -y`)*
+
+---
+
+## 🚀 Step 6: Start and Enable the Service
 
 Reload the system daemon to load your new service definitions, start the Node.js application process, and ensure it boots up automatically on system reboot.
 
@@ -122,7 +140,7 @@ sudo systemctl enable node-app
 
 ---
 
-## 📊 Step 6: Verification and Auditing
+## 📊 Step 7: Verification and Auditing
 
 Verify that everything is running perfectly and securely inside the background.
 
