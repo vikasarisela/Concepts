@@ -1,5 +1,13 @@
 # Application, Process, Service File, Service User — Relation
 
+
+•  You start a web server software program, which creates a process in your operating system memory.
+•  That program is designed to run quietly in the background as a system service.
+•  The service tells the operating system to "bind" or listen to a specific port (such as port 80 for HTTP traffic).
+•  When an incoming data packet arrives at your computer's IP address on port 80, the operating system uses that port number to deliver the data directly to the correct process
+
+
+
 ## 1. Application
 
 Software/program stored on disk.
